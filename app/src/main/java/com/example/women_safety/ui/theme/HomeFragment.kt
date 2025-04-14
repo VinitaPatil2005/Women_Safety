@@ -5,12 +5,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.telephony.SmsManager
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +28,8 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.women_safety.R
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -33,7 +39,6 @@ class HomeFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
 
     private lateinit var welcomeTextView: TextView
@@ -61,6 +66,7 @@ class HomeFragment : Fragment() {
         val allGranted = permissions.entries.all { it.value }
         if (allGranted) {
             Toast.makeText(context, "Permissions granted. SOS is ready.", Toast.LENGTH_SHORT).show()
+            checkBackgroundLocationPermission()
         } else {
             Toast.makeText(context, "Please grant all permissions for SOS feature.", Toast.LENGTH_LONG).show()
         }
@@ -97,6 +103,7 @@ class HomeFragment : Fragment() {
         emergencyContactsRecyclerView.layoutManager = LinearLayoutManager(context)
         emergencyContactsRecyclerView.adapter = ContactAdapter(trustedContacts)
 
+        checkGooglePlayServices()
         requestPermissionsIfNeeded()
         initLocationRequest()
 
@@ -135,12 +142,45 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun checkGooglePlayServices() {
+        val googleApiAvailability = GoogleApiAvailability.getInstance()
+        val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(requireContext())
+        if (resultCode != ConnectionResult.SUCCESS) {
+            Log.e("HomeFragment", "Google Play Services unavailable: $resultCode")
+            Toast.makeText(context, "Google Play Services is required for location. Please update it.", Toast.LENGTH_LONG).show()
+        } else {
+            Log.d("HomeFragment", "Google Play Services available")
+        }
+    }
+
+    private fun checkBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.w("HomeFragment", "Background location permission missing")
+                Toast.makeText(
+                    context,
+                    "Background location permission is recommended for reliable SOS.",
+                    Toast.LENGTH_LONG
+                ).show()
+                requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+            }
+        }
+    }
+
     private fun requestPermissionsIfNeeded() {
-        val permissions = arrayOf(
+        val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.SEND_SMS
         )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            permissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        }
 
         val toRequest = permissions.filter {
             ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED
@@ -148,6 +188,15 @@ class HomeFragment : Fragment() {
 
         if (toRequest.isNotEmpty()) {
             requestPermissionLauncher.launch(toRequest)
+        } else {
+            val allGranted = permissions.all {
+                ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
+            }
+            if (!allGranted) {
+                Toast.makeText(context, "Some permissions are missing. Please enable them in settings.", Toast.LENGTH_LONG).show()
+            } else {
+                Log.d("HomeFragment", "All permissions granted")
+            }
         }
     }
 
@@ -158,24 +207,35 @@ class HomeFragment : Fragment() {
                 Manifest.permission.SEND_SMS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+            Log.e("HomeFragment", "SMS permission missing")
             Toast.makeText(context, "SMS permission missing!", Toast.LENGTH_SHORT).show()
             return
         }
 
         val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Toast.makeText(context, "Enable GPS to send location!", Toast.LENGTH_SHORT).show()
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
+            !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        ) {
+            Log.w("HomeFragment", "No location providers enabled")
+            Toast.makeText(context, "Location services are disabled. Please enable GPS or Wi-Fi.", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
             return
         }
 
+        Log.d("HomeFragment", "Requesting last location")
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             if (location != null) {
+                Log.d("HomeFragment", "Last location: ${location.latitude}, ${location.longitude}")
                 sendSMSWithLocation(location.latitude, location.longitude)
             } else {
+                Log.w("HomeFragment", "Last location is null")
+                Toast.makeText(context, "Last location unavailable. Requesting new location...", Toast.LENGTH_SHORT).show()
                 requestNewLocation()
             }
         }.addOnFailureListener {
+            Log.e("HomeFragment", "Last location error: ${it.message}")
             Toast.makeText(context, "❌ Location error: ${it.message}", Toast.LENGTH_LONG).show()
+            requestNewLocation()
         }
     }
 
@@ -185,34 +245,104 @@ class HomeFragment : Fragment() {
         val smsManager: SmsManager = requireContext().getSystemService(SmsManager::class.java)
 
         for (contact in trustedContacts) {
-            smsManager.sendTextMessage(contact.phoneNumber, null, message, null, null)
+            try {
+                smsManager.sendTextMessage(contact.phoneNumber, null, message, null, null)
+                Log.d("HomeFragment", "SMS sent to ${contact.phoneNumber}")
+            } catch (e: Exception) {
+                Log.e("HomeFragment", "Failed to send SMS to ${contact.phoneNumber}: ${e.message}")
+                Toast.makeText(context, "Failed to send SMS to ${contact.name}", Toast.LENGTH_SHORT).show()
+            }
         }
         Toast.makeText(context, "🚨 SOS message sent!", Toast.LENGTH_SHORT).show()
     }
 
     @SuppressLint("MissingPermission")
     private fun requestNewLocation() {
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val loc = result.lastLocation
+                if (loc != null) {
+                    Log.d("HomeFragment", "New location: ${loc.latitude}, ${loc.longitude}")
+                    sendSMSWithLocation(loc.latitude, loc.longitude)
+                    fusedLocationClient.removeLocationUpdates(this)
+                } else {
+                    Log.w("HomeFragment", "New location is null")
+                }
+            }
+
+            override fun onLocationAvailability(availability: LocationAvailability) {
+                Log.d("HomeFragment", "Location availability: ${availability.isLocationAvailable}")
+                if (!availability.isLocationAvailable) {
+                    Toast.makeText(context, "No location signal. Try moving to an open area or enabling Wi-Fi.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        Log.d("HomeFragment", "Requesting new location updates")
         fusedLocationClient.requestLocationUpdates(
             locationRequest,
-            object : LocationCallback() {
-                override fun onLocationResult(result: LocationResult) {
-                    val loc = result.lastLocation
-                    if (loc != null) {
-                        sendSMSWithLocation(loc.latitude, loc.longitude)
-                        fusedLocationClient.removeLocationUpdates(this)
-                    } else {
-                        Toast.makeText(context, "❌ Still unable to get location.", Toast.LENGTH_LONG).show()
-                    }
-                }
-            },
+            locationCallback,
             Looper.getMainLooper()
         )
+
+        // Timeout after 45 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            Log.w("HomeFragment", "Location request timed out")
+            Toast.makeText(context, "❌ Location timeout. Sending SMS without location.", Toast.LENGTH_LONG).show()
+            tryLastKnownLocationFromManager()
+        }, 45000)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun tryLastKnownLocationFromManager() {
+        val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+        var bestLocation: Location? = null
+        var bestTime: Long = 0
+
+        for (provider in providers) {
+            try {
+                val location = locationManager.getLastKnownLocation(provider)
+                if (location != null && location.time > bestTime) {
+                    bestLocation = location
+                    bestTime = location.time
+                }
+            } catch (e: Exception) {
+                Log.w("HomeFragment", "Failed to get location from $provider: ${e.message}")
+            }
+        }
+
+        if (bestLocation != null) {
+            Log.d("HomeFragment", "Found last known location: ${bestLocation.latitude}, ${bestLocation.longitude}")
+            sendSMSWithLocation(bestLocation.latitude, bestLocation.longitude)
+        } else {
+            Log.w("HomeFragment", "No last known location from manager")
+            sendSMSWithoutLocation()
+        }
+    }
+
+    private fun sendSMSWithoutLocation() {
+        val message = "🚨 Emergency! I need help. Unable to get my location."
+        val smsManager: SmsManager = requireContext().getSystemService(SmsManager::class.java)
+
+        for (contact in trustedContacts) {
+            try {
+                smsManager.sendTextMessage(contact.phoneNumber, null, message, null, null)
+                Log.d("HomeFragment", "SMS sent to ${contact.phoneNumber}")
+            } catch (e: Exception) {
+                Log.e("HomeFragment", "Failed to send SMS to ${contact.phoneNumber}: ${e.message}")
+                Toast.makeText(context, "Failed to send SMS to ${contact.name}", Toast.LENGTH_SHORT).show()
+            }
+        }
+        Toast.makeText(context, "🚨 SOS message sent without location!", Toast.LENGTH_SHORT).show()
     }
 
     private fun initLocationRequest() {
-        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
+        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
             .setWaitForAccurateLocation(true)
-            .setMinUpdateIntervalMillis(2000)
+            .setMinUpdateIntervalMillis(500)
+            .setMaxUpdateDelayMillis(5000)
             .build()
     }
 }
@@ -235,7 +365,6 @@ class ContactAdapter(private val contacts: List<Contact>) :
         return ContactViewHolder(view)
     }
 
-    
     override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
         val contact = contacts[position]
         holder.name.text = contact.name
