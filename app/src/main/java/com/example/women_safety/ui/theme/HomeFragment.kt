@@ -235,6 +235,7 @@ class ContactAdapter(private val contacts: List<Contact>) :
         return ContactViewHolder(view)
     }
 
+    
     override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
         val contact = contacts[position]
         holder.name.text = contact.name
