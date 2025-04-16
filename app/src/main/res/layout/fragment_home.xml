@@ -71,6 +71,7 @@
             android:textColor="#FFFFFF"
             android:textSize="40sp"
             android:textStyle="bold" />
+
     </FrameLayout>
 
     <!-- Emergency Contacts Section -->
@@ -89,7 +90,20 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
-
+            <Button
+                android:id="@+id/voice_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:drawableStart="@drawable/ic_mic"
+                android:drawablePadding="8dp"
+                android:background="@drawable/voice_button_background"
+                android:text="Use Voice Command"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:paddingHorizontal="24dp"
+                android:paddingVertical="12dp"
+                android:elevation="6dp" />
             <!-- Emergency Contacts Title -->
             <TextView
                 android:id="@+id/tv_emergency_contacts"
@@ -110,7 +124,8 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:padding="8dp"
-                android:scrollbars="vertical" />
+                android:scrollbars="vertical"
+                tools:ignore="SpeakableTextPresentCheck" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
