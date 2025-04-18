@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="#6A6767"
     android:layout_margin="8dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp">
@@ -18,7 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="18sp"
-            android:textStyle="bold"
+            android:fontFamily="@font/titilliumweb_bold"
             android:textColor="@android:color/black"
             android:text="Blog Title" />
 
@@ -28,6 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textSize="14sp"
+            android:fontFamily="@font/titilliumweb_regular"
             android:text="Blog description goes here" />
 
         <TextView
@@ -36,6 +38,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textSize="12sp"
+            android:fontFamily="@font/titilliumweb_regular"
             android:textColor="@android:color/darker_gray"
             android:text="April 10, 2025" />
 
@@ -44,6 +47,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="Read More >"
+            android:fontFamily="@font/titilliumweb_regular"
             android:textColor="@android:color/holo_blue_dark" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
