@@ -1,5 +1,6 @@
 [versions]
 agp = "8.9.1"
+androidxCoreKtx = "1.12.0"
 androidxNavigationFragmentKtxVersion = "2.7.7"
 appcompatVersion = "1.6.1"
 constraintlayout = "2.2.1"
@@ -7,6 +8,7 @@ coreKtxVersion = "1.9.0"
 firebaseAuthKtx = "23.2.0"
 firebaseFirestoreKtx = "25.1.3"
 fragmentKtx = "1.8.6"
+fragmentKtxVersion = "1.6.1"
 googleServices = "4.4.2"
 googleServicesVersion = "4.4.0"
 kotlin = "2.0.21"
@@ -19,6 +21,7 @@ activityCompose = "1.10.1"
 composeBom = "2024.09.00"
 appcompat = "1.7.0"
 material = "1.12.0"
+materialVersion = "1.9.0"
 navigationFragmentKtx = "2.8.9"
 navigationUiKtx = "2.7.7"
 playServicesLocation = "21.3.0"
@@ -28,8 +31,10 @@ playServicesLocationVersion = "21.0.1"
 androidx-appcompat-v161 = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-ktx-v1120 = { module = "androidx.core:core-ktx", version.ref = "androidxCoreKtx" }
 androidx-core-ktx-v190 = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
+androidx-fragment-ktx-v161 = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtxVersion" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx-v277 = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationUiKtx" }
@@ -53,6 +58,7 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
+material-v190 = { module = "com.google.android.material:material", version.ref = "materialVersion" }
 navigation-fragment-ktx-v277 = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidxNavigationFragmentKtxVersion" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 play-services-location-v2101 = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocationVersion" }

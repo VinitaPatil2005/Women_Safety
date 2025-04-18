@@ -81,8 +81,6 @@ dependencies {
     implementation (libs.firebase.firestore.ktx)
 
 
-//    implementation (libs.play.services.location.v2101)
+    implementation (libs.play.services.location.v2101)
 //    implementation("com.google.gms.google-services")
-    implementation ("com.google.android.gms:play-services-maps:18.0.0") // For Google Maps
-    implementation ("com.google.android.gms:play-services-location:21.0.1")
 }
