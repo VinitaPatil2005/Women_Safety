@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:background="@color/black"
     android:layout_height="match_parent"
     tools:context="ui.theme.ChatbotFragment">
 
@@ -11,8 +12,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Safety Assistant"
+        android:textColor="@color/white"
+        android:fontFamily="@font/titilliumweb_bold"
         android:textSize="20sp"
-        android:textStyle="bold"
         android:layout_marginTop="16dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -43,6 +45,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Type your message"
+            android:textColor="@color/white"
+            android:fontFamily="@font/titilliumweb_regular"
+            android:background="#403D3D"
             android:inputType="textMultiLine"
             android:maxLines="3"/>
     </com.google.android.material.textfield.TextInputLayout>
@@ -52,6 +57,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Send"
+        android:fontFamily="@font/titilliumweb_regular"
         android:layout_margin="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

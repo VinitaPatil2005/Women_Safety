@@ -31,7 +31,8 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="Welcome to Safety App"
-                android:textColor="#BB86FC"
+                android:fontFamily="@font/titilliumweb_bold"
+                android:textColor="@color/purple_200"
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
@@ -40,12 +41,12 @@
                 android:id="@+id/tv_safety_tip"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/titilliumweb_regular"
                 android:layout_marginTop="12dp"
                 android:background="#2D2D2D"
                 android:padding="16dp"
                 android:text="Safety Tip: Share your location with trusted contacts when traveling alone."
-                android:textColor="#03DAC6"
-                android:textStyle="italic" />
+                android:textColor="#03DAC6" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -60,7 +61,7 @@
         app:layout_constraintTop_toBottomOf="@id/card_header">
 
         <!-- SOS Button with Shadow Effect -->
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/sendButton"
             android:layout_width="220dp"
             android:layout_height="220dp"
@@ -68,11 +69,12 @@
             android:background="@drawable/sos_button_background"
             android:elevation="10dp"
             android:text="SOS"
+            android:fontFamily="@font/titilliumweb_bold"
             android:textColor="#FFFFFF"
             android:textSize="40sp"
             android:textStyle="bold"
+            android:backgroundTint="@null" />
 
-            />
 
     </FrameLayout>
 
@@ -91,7 +93,7 @@
         android:paddingVertical="12dp"
         android:text="Use Voice Command"
         android:textColor="#FFFFFF"
-        android:textStyle="bold"
+        android:fontFamily="@font/titilliumweb_regular"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/sos_container" />
@@ -117,7 +119,7 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="#CF6679"
+                android:background="@color/purple_200"
                 android:padding="12dp">
 
                 <TextView
@@ -127,7 +129,7 @@
                     android:text="Emergency Contacts"
                     android:textColor="#121212"
                     android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:fontFamily="@font/titilliumweb_regular"/>
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_add_contact"
@@ -163,6 +165,7 @@
                 android:padding="24dp"
                 android:text="No emergency contacts added yet.\nTap the + button to add contacts."
                 android:textColor="#AAAAAA"
+                android:fontFamily="@font/titilliumweb_regular"
                 android:textSize="16sp"
                 android:visibility="gone" />
         </LinearLayout>

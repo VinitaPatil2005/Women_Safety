@@ -1,16 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="#80FFFFFF">
-    <item>
-        <shape android:shape="oval">
-            <gradient
-                android:startColor="#FF5252"
-                android:endColor="#B71C1C"
-                android:type="radial"
-                android:gradientRadius="120dp" />
-            <stroke
-                android:width="3dp"
-                android:color="#FFFFFF" />
-        </shape>
-    </item>
+    android:color="#40FFFFFF">
+    <item android:drawable="@drawable/sos_button_shape" />
 </ripple>
