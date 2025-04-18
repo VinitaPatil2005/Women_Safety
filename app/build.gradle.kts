@@ -82,5 +82,10 @@ dependencies {
 
 
     implementation (libs.play.services.location.v2101)
-//    implementation("com.google.gms.google-services")
+    implementation (libs.androidx.core.ktx.v1120)
+    implementation (libs.androidx.appcompat)
+    implementation (libs.material.v190)
+    implementation (libs.androidx.fragment.ktx.v161)
+    implementation (libs.play.services.location)
 }
+//    implementation("com.google.gms.google-services")
