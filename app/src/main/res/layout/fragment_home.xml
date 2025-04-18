@@ -30,7 +30,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="Welcome to Safety App"
+                android:text="Welcome to Women Safety"
                 android:fontFamily="@font/titilliumweb_bold"
                 android:textColor="@color/purple_200"
                 android:textSize="22sp"
