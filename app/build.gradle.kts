@@ -81,6 +81,7 @@ dependencies {
     implementation (libs.firebase.firestore.ktx)
 
 
+
     implementation (libs.play.services.location.v2101)
     implementation (libs.androidx.core.ktx.v1120)
     implementation (libs.androidx.appcompat)

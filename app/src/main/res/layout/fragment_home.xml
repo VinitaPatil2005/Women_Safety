@@ -70,7 +70,9 @@
             android:text="SOS"
             android:textColor="#FFFFFF"
             android:textSize="40sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+
+            />
 
     </FrameLayout>
 

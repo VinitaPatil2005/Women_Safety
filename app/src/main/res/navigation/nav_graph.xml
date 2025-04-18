@@ -47,4 +47,10 @@
         android:name="com.example.women_safety.ui.theme.BlogsFragment"
         android:label="fragment_blogs"
         tools:layout="@layout/fragment_blogs" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.women_safety.ui.theme.ProfileFragment"
+        android:label="fragment_profile"
+        tools:layout="@layout/fragment_profile" />
 </navigation>
