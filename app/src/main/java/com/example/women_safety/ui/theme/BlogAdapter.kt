@@ -20,7 +20,7 @@ class BlogAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BlogViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_blog, parent, false)
+            .inflate(R.layout.item_blog, parent, false) // Updated to item_blog_post
         return BlogViewHolder(view)
     }
 

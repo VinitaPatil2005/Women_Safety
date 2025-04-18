@@ -4,48 +4,81 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
+    app:cardBackgroundColor="#2D2D2D"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:padding="12dp">
 
         <ImageView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@drawable/person"
-            app:tint="@android:color/darker_gray" />
+            android:id="@+id/iv_contact_avatar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/avatar_background"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_call"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#FFFFFF" />
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tv_contact_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginStart="12dp"
-            android:orientation="vertical">
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Contact Name"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/iv_delete_contact"
+            app:layout_constraintStart_toEndOf="@id/iv_contact_avatar"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/tv_contact_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:text="Contact Name" />
+        <TextView
+            android:id="@+id/tv_contact_number"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:text="+1234567890"
+            android:textColor="#AAAAAA"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@id/iv_delete_contact"
+            app:layout_constraintStart_toEndOf="@id/iv_contact_avatar"
+            app:layout_constraintTop_toBottomOf="@id/tv_contact_name" />
 
-            <TextView
-                android:id="@+id/tv_contact_phone"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:text="Phone Number" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/tv_contact_relation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:text="Family"
+            android:textColor="#03DAC6"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            app:layout_constraintEnd_toStartOf="@id/iv_delete_contact"
+            app:layout_constraintStart_toEndOf="@id/iv_contact_avatar"
+            app:layout_constraintTop_toBottomOf="@id/tv_contact_number" />
 
         <ImageView
+            android:id="@+id/iv_delete_contact"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:src="@drawable/call"
-            app:tint="@android:color/holo_green_dark" />
-    </LinearLayout>
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="6dp"
+            android:src="@android:drawable/ic_menu_delete"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#CF6679" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

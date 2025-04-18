@@ -3,553 +3,482 @@ package com.example.women_safety.ui.theme
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
-import android.content.Context
+import android.app.Dialog
+import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Location
-import android.location.LocationManager
-import android.os.Build
+import android.media.MediaRecorder
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.provider.Settings
+import android.speech.RecognizerIntent
 import android.telephony.SmsManager
-import android.telephony.TelephonyManager
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.women_safety.R
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
-import com.google.android.gms.location.*
+import com.example.women_safety.adapters.ContactAdapter
+import com.example.women_safety.models.Contact
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import java.io.File
+import java.util.Locale
+import java.util.UUID
 
 class HomeFragment : Fragment() {
 
+    // Permission constants
+    private val PERMISSION_REQUEST_CODE = 123
+    private val SPEECH_REQUEST_CODE = 101
+    private val CONTACTS_PERMISSION_CODE = 102
+
+    // UI components
+    private lateinit var sendButton: Button
+    private lateinit var voiceBtn: Button
+    private lateinit var addContactFab: FloatingActionButton
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var noContactsText: TextView
+
+    // Location
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var locationRequest: LocationRequest
 
-    // Replace with valid phone numbers
-    private val trustedContacts = listOf(
-        Contact("Police", "+91xxxxxxxxxx"), // TODO: Add real number
-        Contact("Women's Helpline", "+91xxxxxxxxxx"), // TODO: Add real number
-        Contact("Family Member", "+91xxxxxxxxxx") // TODO: Add real number
-    )
+    // Voice recording
+    private var audioFilePath: String = ""
+    private var mediaRecorder: MediaRecorder? = null
+    private var isRecording = false
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.entries.all { it.value }
-        if (allGranted) {
-            Log.d("HomeFragment", "All permissions granted")
-            Toast.makeText(context, "Permissions granted!", Toast.LENGTH_SHORT).show()
-        } else {
-            Log.w("HomeFragment", "Permissions denied: $permissions")
-            Toast.makeText(context, "Please grant SMS and location permissions.", Toast.LENGTH_LONG).show()
-        }
-    }
+    // Firebase
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
+    private var userId: String = ""
+
+    // Contact list
+    private lateinit var contactAdapter: ContactAdapter
+    private val contactsList = mutableListOf<Contact>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_home, container, false)
+    ): View? {
+        return inflater.inflate(R.layout.fragment_home, container, false)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Initialize Firebase
+        firestore = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
+
+        // Check if user is signed in
+        auth.currentUser?.let {
+            userId = it.uid
+        } ?: run {
+            // For demo purposes, create anonymous user
+            createAnonymousUser()
+        }
+
+        // Initialize location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
-        // Initialize location request
-        initLocationRequest()
+        // Initialize UI components
+        sendButton = view.findViewById(R.id.sendButton)
+        voiceBtn = view.findViewById(R.id.voice_btn)
+        addContactFab = view.findViewById(R.id.fab_add_contact)
+        recyclerView = view.findViewById(R.id.rv_emergency_contacts)
+        noContactsText = view.findViewById(R.id.tv_no_contacts)
 
-        // Request permissions
-        requestPermissionsIfNeeded()
+        // Set up RecyclerView
+        setupRecyclerView()
 
-        // Send SMS button
-        val sendSmsButton = view.findViewById<Button>(R.id.btn_send_sms)
-        sendSmsButton.setOnClickListener {
-            Log.d("HomeFragment", "Send SMS button clicked")
-            sendSMSWithLiveLocation()
+        // Load contacts from Firebase
+        loadContacts()
+
+        // Button click listeners
+        setupClickListeners()
+    }
+
+    private fun createAnonymousUser() {
+        auth.signInAnonymously().addOnSuccessListener {
+            userId = it.user?.uid ?: ""
+            loadContacts()
+        }.addOnFailureListener { e ->
+            Toast.makeText(context, "Authentication failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        try {
-            context?.unregisterReceiver(smsSentReceiver)
-            context?.unregisterReceiver(smsDeliveredReceiver)
-        } catch (e: Exception) {
-            Log.w("HomeFragment", "Failed to unregister receivers: ${e.message}")
+    private fun setupRecyclerView() {
+        contactAdapter = ContactAdapter(contactsList) { contact ->
+            deleteContact(contact)
+        }
+
+        recyclerView.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = contactAdapter
         }
     }
 
-    private fun requestPermissionsIfNeeded() {
-        val permissions = mutableListOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            permissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    private fun setupClickListeners() {
+        sendButton.setOnClickListener {
+            if (hasSmsPermission() && hasLocationPermission()) {
+                sendSmsToAllContacts("Emergency I am in Danger!!")
+            } else {
+                requestPermissions(
+                    arrayOf(
+                        Manifest.permission.SEND_SMS,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ),
+                    PERMISSION_REQUEST_CODE
+                )
+            }
         }
 
-        val toRequest = permissions.filter {
-            ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED
-        }.toTypedArray()
+        voiceBtn.setOnClickListener {
+            if (hasMicrophonePermission()) {
+                if (isRecording) {
+                    stopRecording()
+                    Toast.makeText(requireContext(), "Recording stopped - say help or emergency", Toast.LENGTH_SHORT).show()
+                    startSpeechToText()
+                } else {
+                    startRecording()
+                    Toast.makeText(requireContext(), "Recording started", Toast.LENGTH_SHORT).show()
+                }
+                isRecording = !isRecording
+            } else {
+                requestPermissions(
+                    arrayOf(Manifest.permission.RECORD_AUDIO),
+                    PERMISSION_REQUEST_CODE
+                )
+            }
+        }
 
-        if (toRequest.isNotEmpty()) {
-            Log.d("HomeFragment", "Requesting permissions: ${toRequest.joinToString()}")
-            requestPermissionLauncher.launch(toRequest)
+        addContactFab.setOnClickListener {
+            showAddContactDialog()
+        }
+    }
+
+    private fun loadContacts() {
+        if (userId.isEmpty()) return
+
+        firestore.collection("contacts")
+            .whereEqualTo("userId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Toast.makeText(context, "Error loading contacts: ${error.message}", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
+
+                contactsList.clear()
+                snapshot?.documents?.forEach { doc ->
+                    val contact = doc.toObject(Contact::class.java)
+                    contact?.let { contactsList.add(it) }
+                }
+
+                // Update UI based on contacts list
+                updateContactsUI()
+            }
+    }
+
+    private fun updateContactsUI() {
+        contactAdapter.updateContacts(contactsList)
+
+        if (contactsList.isEmpty()) {
+            noContactsText.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
         } else {
-            Log.d("HomeFragment", "All permissions already granted")
+            noContactsText.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
         }
     }
 
-    private fun initLocationRequest() {
-        locationRequest = LocationRequest.create().apply {
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 2000L
-            fastestInterval = 500L
-            maxWaitTime = 5000L
+    private fun showAddContactDialog() {
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_add_contact)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val nameEditText = dialog.findViewById<EditText>(R.id.et_contact_name)
+        val numberEditText = dialog.findViewById<EditText>(R.id.et_contact_number)
+        val relationEditText = dialog.findViewById<EditText>(R.id.et_contact_relation)
+        val saveButton = dialog.findViewById<Button>(R.id.btn_save)
+        val cancelButton = dialog.findViewById<Button>(R.id.btn_cancel)
+
+        saveButton.setOnClickListener {
+            val name = nameEditText.text.toString().trim()
+            val number = numberEditText.text.toString().trim()
+            val relation = relationEditText.text.toString().trim()
+
+            if (name.isEmpty() || number.isEmpty()) {
+                Toast.makeText(context, "Name and number are required", Toast.LENGTH_SHORT).show()
+            } else {
+                saveContact(name, number, relation)
+                dialog.dismiss()
+            }
+        }
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun saveContact(name: String, phoneNumber: String, relation: String) {
+        if (userId.isEmpty()) {
+            Toast.makeText(context, "User authentication error", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val contactId = UUID.randomUUID().toString()
+        val contact = Contact(contactId, name, phoneNumber, relation, userId)
+
+        firestore.collection("contacts")
+            .document(contactId)
+            .set(contact)
+            .addOnSuccessListener {
+                Toast.makeText(context, "Contact saved successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Failed to save contact: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun deleteContact(contact: Contact) {
+        firestore.collection("contacts")
+            .document(contact.id)
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(context, "Contact deleted", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Failed to delete contact: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun sendSmsToAllContacts(message: String) {
+        if (contactsList.isEmpty()) {
+            Toast.makeText(context, "No emergency contacts added", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+                if (location != null) {
+                    val locationMessage =
+                        "$message\nLocation: https://maps.google.com/?q=${location.latitude},${location.longitude}"
+
+                    // Send SMS to all contacts
+                    contactsList.forEach { contact ->
+                        sendSms(contact.phoneNumber, locationMessage)
+                    }
+                } else {
+                    Toast.makeText(context, "Unable to fetch location", Toast.LENGTH_SHORT).show()
+
+                    // Send SMS without location
+                    contactsList.forEach { contact ->
+                        sendSms(contact.phoneNumber, message)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Failed to fetch location: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun sendSms(phoneNumber: String, message: String) {
+        try {
+            val smsManager: SmsManager = SmsManager.getDefault()
+            smsManager.sendTextMessage(phoneNumber, null, message, null, null)
+            Toast.makeText(context, "SMS sent to $phoneNumber", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(context, "Failed to send SMS: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
     private fun hasSmsPermission(): Boolean {
-        return ActivityCompat.checkSelfPermission(
+        return ContextCompat.checkSelfPermission(
             requireContext(),
             Manifest.permission.SEND_SMS
         ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun hasLocationPermission(): Boolean {
-        return ActivityCompat.checkSelfPermission(
+        return ContextCompat.checkSelfPermission(
             requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun hasTelephonyFeature(): Boolean {
-        return requireContext().packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+    private fun hasMicrophonePermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun hasSimCard(): Boolean {
-        val telephonyManager = requireContext().getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-        return telephonyManager?.simState == TelephonyManager.SIM_STATE_READY
-    }
+    private fun startRecording() {
+        val outputFile = File(requireContext().getExternalFilesDir(null), "recorded_audio.m4a")
+        audioFilePath = outputFile.absolutePath
 
-    private fun checkGooglePlayServices(): Boolean {
-        val googleApiAvailability = GoogleApiAvailability.getInstance()
-        val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(requireContext())
-        if (resultCode != ConnectionResult.SUCCESS) {
-            Log.e("HomeFragment", "Google Play Services unavailable: $resultCode")
-            Toast.makeText(context, "Google Play Services required for location.", Toast.LENGTH_LONG).show()
-            return false
-        }
-        Log.d("HomeFragment", "Google Play Services available")
-        return true
-    }
+        mediaRecorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            setOutputFile(audioFilePath)
 
-    @SuppressLint("MissingPermission")
-    private fun sendSMSWithLiveLocation() {
-        // Check SMS permission
-        if (!hasSmsPermission()) {
-            Log.e("HomeFragment", "SMS permission missing")
-            Toast.makeText(context, "SMS permission missing! Please grant it.", Toast.LENGTH_LONG).show()
-            requestPermissionLauncher.launch(arrayOf(Manifest.permission.SEND_SMS))
-            return
-        }
-
-        // Check location permission
-        if (!hasLocationPermission()) {
-            Log.e("HomeFragment", "Location permission missing")
-            Toast.makeText(context, "Location permission missing! Please grant it.", Toast.LENGTH_LONG).show()
-            requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
-            return
-        }
-
-        // Check telephony feature
-        if (!hasTelephonyFeature()) {
-            Log.e("HomeFragment", "Device does not support SMS")
-            Toast.makeText(context, "This device does not support SMS.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Check SIM state
-        if (!hasSimCard()) {
-            Log.e("HomeFragment", "No SIM card detected")
-            Toast.makeText(context, "No SIM card detected. Please insert a SIM card.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Check location providers
-        val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
-            !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        ) {
-            Log.w("HomeFragment", "No location providers enabled")
-            Toast.makeText(context, "Enable GPS or Wi-Fi for location.", Toast.LENGTH_LONG).show()
-            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            sendSMSWithoutLocation()
-            return
-        }
-
-        Log.d("HomeFragment", "GPS enabled: ${locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)}")
-        Log.d("HomeFragment", "Network enabled: ${locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)}")
-
-        // Check Google Play Services
-        if (!checkGooglePlayServices()) {
-            Log.w("HomeFragment", "Falling back to LocationManager")
-            tryLastKnownLocationFromManager()
-            return
-        }
-
-        // Try to get last known location
-        Log.d("HomeFragment", "Requesting last location")
-        try {
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    Log.d("HomeFragment", "Last location: ${location.latitude}, ${location.longitude}, accuracy: ${location.accuracy}")
-                    sendSMSWithLocation(location.latitude, location.longitude)
-                } else {
-                    Log.w("HomeFragment", "Last location is null")
-                    Toast.makeText(context, "Location unavailable. Requesting new location...", Toast.LENGTH_SHORT).show()
-                    requestNewLocation()
-                }
-            }.addOnFailureListener { e ->
-                Log.e("HomeFragment", "Last location error: ${e.message}")
-                Toast.makeText(context, "Location error: ${e.message}", Toast.LENGTH_LONG).show()
-                tryLastKnownLocationFromManager()
-            }
-        } catch (e: SecurityException) {
-            Log.e("HomeFragment", "SecurityException in lastLocation: ${e.message}")
-            Toast.makeText(context, "Location error. Trying fallback...", Toast.LENGTH_LONG).show()
-            tryLastKnownLocationFromManager()
-        }
-    }
-
-    private val smsSentReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val phoneNumber = intent?.getStringExtra("phoneNumber") ?: "unknown"
-            when (resultCode) {
-                Activity.RESULT_OK -> {
-                    Log.d("HomeFragment", "SMS sent successfully to $phoneNumber")
-                    Toast.makeText(context, "SMS sent to $phoneNumber", Toast.LENGTH_SHORT).show()
-                }
-                SmsManager.RESULT_ERROR_GENERIC_FAILURE -> {
-                    Log.e("HomeFragment", "SMS failed to send to $phoneNumber: Generic failure")
-                    Toast.makeText(context, "SMS failed to $phoneNumber: Generic error", Toast.LENGTH_LONG).show()
-                }
-                SmsManager.RESULT_ERROR_NO_SERVICE -> {
-                    Log.e("HomeFragment", "SMS failed to send to $phoneNumber: No service")
-                    Toast.makeText(context, "SMS failed to $phoneNumber: No service", Toast.LENGTH_LONG).show()
-                }
-                SmsManager.RESULT_ERROR_NULL_PDU -> {
-                    Log.e("HomeFragment", "SMS failed to send to $phoneNumber: Null PDU")
-                    Toast.makeText(context, "SMS failed to $phoneNumber: Null PDU", Toast.LENGTH_LONG).show()
-                }
-                SmsManager.RESULT_ERROR_RADIO_OFF -> {
-                    Log.e("HomeFragment", "SMS failed to send to $phoneNumber: Radio off")
-                    Toast.makeText(context, "SMS failed to $phoneNumber: Radio off", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    private val smsDeliveredReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val phoneNumber = intent?.getStringExtra("phoneNumber") ?: "unknown"
-            when (resultCode) {
-                Activity.RESULT_OK -> {
-                    Log.d("HomeFragment", "SMS delivered to $phoneNumber")
-                    Toast.makeText(context, "SMS delivered to $phoneNumber", Toast.LENGTH_SHORT).show()
-                }
-                Activity.RESULT_CANCELED -> {
-                    Log.e("HomeFragment", "SMS not delivered to $phoneNumber")
-                    Toast.makeText(context, "SMS not delivered to $phoneNumber", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    private fun sendSMSWithLocation(lat: Double, lon: Double) {
-        if (!hasSmsPermission() || !hasTelephonyFeature() || !hasSimCard()) {
-            Log.e("HomeFragment", "Cannot send SMS: Missing permission, telephony, or SIM")
-            Toast.makeText(context, "Cannot send SMS. Check permissions or SIM.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val smsManager: SmsManager? = try {
-            SmsManager.getDefault()
-        } catch (e: Exception) {
-            Log.e("HomeFragment", "Failed to get SmsManager: ${e.message}")
-            null
-        }
-
-        if (smsManager == null) {
-            Log.e("HomeFragment", "SmsManager is null")
-            Toast.makeText(context, "Unable to access SMS service.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Register receivers
-        try {
-            ContextCompat.registerReceiver(
-                requireContext(),
-                smsSentReceiver,
-                IntentFilter("SMS_SENT"),
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            )
-            ContextCompat.registerReceiver(
-                requireContext(),
-                smsDeliveredReceiver,
-                IntentFilter("SMS_DELIVERED"),
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            )
-            Log.d("HomeFragment", "Registered SMS receivers")
-        } catch (e: Exception) {
-            Log.e("HomeFragment", "Failed to register SMS receivers: ${e.message}")
-            Toast.makeText(context, "Failed to track SMS delivery.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val link = "https://maps.google.com/?q=$lat,$lon"
-        val message = "Emergency! I need help. My location: $link"
-
-        var sentAny = false
-        for (contact in trustedContacts) {
-            if (!isValidPhoneNumber(contact.phoneNumber)) {
-                Log.w("HomeFragment", "Invalid phone number: ${contact.phoneNumber}")
-                Toast.makeText(context, "Invalid number: ${contact.name}", Toast.LENGTH_SHORT).show()
-                continue
-            }
             try {
-                val sentIntent = Intent("SMS_SENT").apply {
-                    putExtra("phoneNumber", contact.phoneNumber)
-                }
-                val deliveredIntent = Intent("SMS_DELIVERED").apply {
-                    putExtra("phoneNumber", contact.phoneNumber)
-                }
-                val sentPI = PendingIntent.getBroadcast(
-                    requireContext(), 0, sentIntent,
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
-                )
-                val deliveredPI = PendingIntent.getBroadcast(
-                    requireContext(), 0, deliveredIntent,
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
-                )
-                smsManager.sendTextMessage(contact.phoneNumber, null, message, sentPI, deliveredPI)
-                Log.d("HomeFragment", "SMS queued to ${contact.phoneNumber}")
-                sentAny = true
+                prepare()
+                start()
             } catch (e: Exception) {
-                Log.e("HomeFragment", "Failed to send SMS to ${contact.phoneNumber}: ${e.message}")
-                Toast.makeText(context, "Failed SMS to ${contact.name}", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Failed to start recording: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        }
-        if (sentAny) {
-            Toast.makeText(context, "Emergency SMS sent with location!", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Failed to send any SMS!", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun sendSMSWithoutLocation() {
-        if (!hasSmsPermission() || !hasTelephonyFeature() || !hasSimCard()) {
-            Log.e("HomeFragment", "Cannot send SMS: Missing permission, telephony, or SIM")
-            Toast.makeText(context, "Cannot send SMS. Check permissions or SIM.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val smsManager: SmsManager? = try {
-            SmsManager.getDefault()
-        } catch (e: Exception) {
-            Log.e("HomeFragment", "Failed to get SmsManager: ${e.message}")
-            null
-        }
-
-        if (smsManager == null) {
-            Log.e("HomeFragment", "SmsManager is null")
-            Toast.makeText(context, "Unable to access SMS service.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Register receivers
+    private fun stopRecording() {
         try {
-            ContextCompat.registerReceiver(
-                requireContext(),
-                smsSentReceiver,
-                IntentFilter("SMS_SENT"),
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            )
-            ContextCompat.registerReceiver(
-                requireContext(),
-                smsDeliveredReceiver,
-                IntentFilter("SMS_DELIVERED"),
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            )
-            Log.d("HomeFragment", "Registered SMS receivers")
+            mediaRecorder?.apply {
+                stop()
+                release()
+            }
+            mediaRecorder = null
         } catch (e: Exception) {
-            Log.e("HomeFragment", "Failed to register SMS receivers: ${e.message}")
-            Toast.makeText(context, "Failed to track SMS delivery.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val message = "Emergency! I need help. Unable to get location."
-
-        var sentAny = false
-        for (contact in trustedContacts) {
-            if (!isValidPhoneNumber(contact.phoneNumber)) {
-                Log.w("HomeFragment", "Invalid phone number: ${contact.phoneNumber}")
-                Toast.makeText(context, "Invalid number: ${contact.name}", Toast.LENGTH_SHORT).show()
-                continue
-            }
-            try {
-                val sentIntent = Intent("SMS_SENT").apply {
-                    putExtra("phoneNumber", contact.phoneNumber)
-                }
-                val deliveredIntent = Intent("SMS_DELIVERED").apply {
-                    putExtra("phoneNumber", contact.phoneNumber)
-                }
-                val sentPI = PendingIntent.getBroadcast(
-                    requireContext(), 0, sentIntent,
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
-                )
-                val deliveredPI = PendingIntent.getBroadcast(
-                    requireContext(), 0, deliveredIntent,
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
-                )
-                smsManager.sendTextMessage(contact.phoneNumber, null, message, sentPI, deliveredPI)
-                Log.d("HomeFragment", "SMS queued to ${contact.phoneNumber}")
-                sentAny = true
-            } catch (e: Exception) {
-                Log.e("HomeFragment", "Failed to send SMS to ${contact.phoneNumber}: ${e.message}")
-                Toast.makeText(context, "Failed SMS to ${contact.name}", Toast.LENGTH_LONG).show()
-            }
-        }
-        if (sentAny) {
-            Toast.makeText(context, "Emergency SMS sent without location!", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Failed to send any SMS!", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "Recording error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun isValidPhoneNumber(phoneNumber: String): Boolean {
-        return phoneNumber.matches(Regex("^\\+?[1-9]\\d{1,14}\$"))
-    }
+    private fun startSpeechToText() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        intent.putExtra(
+            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+        )
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
 
-    @SuppressLint("MissingPermission")
-    private fun requestNewLocation() {
-        val locationCallback = object : LocationCallback() {
-            override fun onLocationResult(result: LocationResult) {
-                Log.d("HomeFragment", "Location result received with ${result.locations.size} locations")
-                for (loc in result.locations) {
-                    Log.d("HomeFragment", "Location update: ${loc.latitude}, ${loc.longitude}, accuracy: ${loc.accuracy}")
-                }
-                val loc = result.lastLocation
-                if (loc != null) {
-                    Log.d("HomeFragment", "New location: ${loc.latitude}, ${loc.longitude}, accuracy: ${loc.accuracy}")
-                    sendSMSWithLocation(loc.latitude, loc.longitude)
-                    fusedLocationClient.removeLocationUpdates(this)
-                } else {
-                    Log.w("HomeFragment", "New location is null")
-                }
-            }
-
-            override fun onLocationAvailability(availability: LocationAvailability) {
-                Log.d("HomeFragment", "Location availability: ${availability.isLocationAvailable}")
-                if (!availability.isLocationAvailable) {
-                    Toast.makeText(
-                        context,
-                        "No location signal. Try moving to an open area or enabling Wi-Fi.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-
-        val networkLocationRequest = LocationRequest.create().apply {
-            priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
-            interval = 2000L
-            fastestInterval = 500L
-            maxWaitTime = 5000L
-        }
-
-        Log.d("HomeFragment", "Requesting new location updates (high accuracy)")
         try {
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                Looper.getMainLooper()
-            )
-        } catch (e: SecurityException) {
-            Log.e("HomeFragment", "SecurityException in requestLocationUpdates: ${e.message}")
-            Toast.makeText(context, "Location service error. Trying fallback...", Toast.LENGTH_LONG).show()
-            tryLastKnownLocationFromManager()
+            startActivityForResult(intent, SPEECH_REQUEST_CODE)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(requireContext(), "Speech recognition not supported", Toast.LENGTH_SHORT)
+                .show()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == SPEECH_REQUEST_CODE && resultCode == Activity.RESULT_OK && data != null) {
+            val result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val spokenText = result?.get(0) ?: ""
+            Toast.makeText(requireContext(), "Received Text: $spokenText", Toast.LENGTH_LONG).show()
+
+            // Check for emergency keywords
+            val emergencyKeywords = listOf("help", "emergency", "danger", "sos")
+            if (emergencyKeywords.any { keyword -> spokenText.lowercase().contains(keyword) }) {
+                // Send emergency SMS with location
+                sendSmsToAllContacts("EMERGENCY: Voice command detected. I need help!")
+
+                // Also share via WhatsApp if audio file exists
+                sendWhatsAppMessage(spokenText)
+            }
+        }
+    }
+
+    private fun sendWhatsAppMessage(spokenText: String) {
+        val file = File(audioFilePath)
+        if (!file.exists()) {
+            Toast.makeText(context, "Audio file not found!", Toast.LENGTH_SHORT).show()
             return
         }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            Log.d("HomeFragment", "Switching to network location request")
-            try {
-                fusedLocationClient.removeLocationUpdates(locationCallback)
-                fusedLocationClient.requestLocationUpdates(
-                    networkLocationRequest,
-                    locationCallback,
-                    Looper.getMainLooper()
-                )
-            } catch (e: SecurityException) {
-                Log.e("HomeFragment", "SecurityException in network location request: ${e.message}")
-                tryLastKnownLocationFromManager()
-            }
-        }, 5000)
+        val audioUri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.fileprovider",
+            file
+        )
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            fusedLocationClient.removeLocationUpdates(locationCallback)
-            Log.w("HomeFragment", "Location request timed out")
-            Toast.makeText(context, "Location timeout. Trying last known location...", Toast.LENGTH_LONG).show()
-            tryLastKnownLocationFromManager()
-        }, 120000)
+        val message = "Emergency! I need help!\n$spokenText"
+
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.type = "audio/*"
+        intent.putExtra(Intent.EXTRA_STREAM, audioUri)
+        intent.putExtra(Intent.EXTRA_TEXT, message)
+        intent.setPackage("com.whatsapp")
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "WhatsApp not installed", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    @SuppressLint("MissingPermission")
-    private fun tryLastKnownLocationFromManager() {
-        val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)
-        var bestLocation: Location? = null
-        var bestTime: Long = 0
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        for (provider in providers) {
-            try {
-                val location = locationManager.getLastKnownLocation(provider)
-                if (location != null && location.time > bestTime) {
-                    Log.d("HomeFragment", "Last known $provider location: ${location.latitude}, ${location.longitude}, time: ${location.time}, accuracy: ${location.accuracy}")
-                    bestLocation = location
-                    bestTime = location.time
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            var allPermissionsGranted = true
+
+            for (i in permissions.indices) {
+                val permission = permissions[i]
+                val granted = grantResults[i] == PackageManager.PERMISSION_GRANTED
+                allPermissionsGranted = allPermissionsGranted && granted
+
+                when (permission) {
+                    Manifest.permission.SEND_SMS -> {
+                        val msg = if (granted) "SMS permission granted!" else "SMS permission denied."
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }
+
+                    Manifest.permission.ACCESS_FINE_LOCATION -> {
+                        val msg = if (granted) "Location permission granted!" else "Location permission denied."
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }
+
+                    Manifest.permission.RECORD_AUDIO -> {
+                        val msg = if (granted) "Microphone permission granted!" else "Microphone permission denied."
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }
                 }
-            } catch (e: Exception) {
-                Log.w("HomeFragment", "Failed to get location from $provider: ${e.message}")
+            }
+
+            // If all permissions granted and this was from the SOS button
+            if (allPermissionsGranted && permissions.contains(Manifest.permission.SEND_SMS)) {
+                sendSmsToAllContacts("Emergency I am in Danger!!")
             }
         }
+    }
 
-        if (bestLocation != null && (System.currentTimeMillis() - bestTime) < 90 * 60 * 1000) {
-            Log.d("HomeFragment", "Using last known location: ${bestLocation.latitude}, ${bestLocation.longitude}")
-            sendSMSWithLocation(bestLocation.latitude, bestLocation.longitude)
-        } else {
-            Log.w("HomeFragment", "No valid last known location from manager")
-            Toast.makeText(context, "No recent location. Sending SMS without location.", Toast.LENGTH_LONG).show()
-            sendSMSWithoutLocation()
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up MediaRecorder if it's still active
+        if (isRecording) {
+            try {
+                mediaRecorder?.apply {
+                    stop()
+                    release()
+                }
+                mediaRecorder = null
+            } catch (e: Exception) {
+                // Ignore exceptions during cleanup
+            }
         }
     }
 }
-
-// Contact Model
-data class Contact(val name: String, val phoneNumber: String)
