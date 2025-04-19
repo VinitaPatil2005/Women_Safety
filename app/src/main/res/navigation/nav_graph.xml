@@ -53,4 +53,10 @@
         android:name="com.example.women_safety.ui.theme.ProfileFragment"
         android:label="fragment_profile"
         tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/nearbypoliceFragment"
+        android:name="com.example.women_safety.ui.NearbyPoliceFragment"
+    android:label="Nearby Police"
+    android:layout="@layout/fragment_nearbypolice" />
 </navigation>

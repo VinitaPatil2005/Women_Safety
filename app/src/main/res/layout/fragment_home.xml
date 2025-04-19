@@ -7,7 +7,6 @@
     android:background="#121212"
     tools:context=".ui.theme.HomeFragment">
 
-    <!-- Header Section -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_header"
         android:layout_width="match_parent"
@@ -29,14 +28,13 @@
                 android:id="@+id/tv_welcome"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="Welcome to Women Safety"
                 android:fontFamily="@font/titilliumweb_bold"
+                android:gravity="center"
+                android:text="Welcome to Sangini"
                 android:textColor="@color/purple_200"
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
-            <!-- Safety Tip -->
             <TextView
                 android:id="@+id/tv_safety_tip"
                 android:layout_width="match_parent"
@@ -50,7 +48,6 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- SOS Button Container -->
     <FrameLayout
         android:id="@+id/sos_container"
         android:layout_width="240dp"
@@ -138,11 +135,12 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:layout_marginEnd="2dp"
-                    android:contentDescription="Add Contact"
                     android:backgroundTint="#BB86FC"
-                    app:tint="#FFFFFF"
+                    android:contentDescription="Add Contact"
                     app:fabSize="mini"
-                    app:srcCompat="@android:drawable/ic_input_add" />
+                    app:srcCompat="@android:drawable/ic_input_add"
+                    app:tint="#FFFFFF"
+                    tools:ignore="TouchTargetSizeCheck" />
             </RelativeLayout>
 
             <!-- Contact List -->
