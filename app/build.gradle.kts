@@ -80,8 +80,9 @@ dependencies {
     // Firebase Firestore (for user data)
     implementation (libs.firebase.firestore.ktx)
 
-
-
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("com.google.android.gms:play-services-maps:19.2.0")
+    implementation ("com.google.android.libraries.places:places:4.2.0")
     implementation (libs.play.services.location.v2101)
     implementation (libs.androidx.core.ktx.v1120)
     implementation (libs.androidx.appcompat)
@@ -89,4 +90,3 @@ dependencies {
     implementation (libs.androidx.fragment.ktx.v161)
     implementation (libs.play.services.location)
 }
-//    implementation("com.google.gms.google-services")
