@@ -7,6 +7,7 @@
     android:background="#121212"
     tools:context=".ui.theme.HomeFragment">
 
+
     <androidx.cardview.widget.CardView
         android:id="@+id/card_header"
         android:layout_width="match_parent"
@@ -17,36 +18,59 @@
         app:cardBackgroundColor="#1E1E1E"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Welcome Text -->
-            <TextView
-                android:id="@+id/tv_welcome"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/titilliumweb_bold"
-                android:gravity="center"
-                android:text="Welcome to Sangini"
-                android:textColor="@color/purple_200"
-                android:textSize="22sp"
-                android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tv_safety_tip"
+            <ImageButton
+                android:id="@+id/iv_more_options"
+                android:layout_width="20sp"
+                android:layout_height="20sp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_more_vert"
+                android:contentDescription="More options"
+                android:clickable="true"
+                android:focusable="true"
+                />
+
+
+            <!-- Welcome Text -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/titilliumweb_regular"
-                android:layout_marginTop="12dp"
-                android:background="#2D2D2D"
-                android:padding="16dp"
-                android:text="Safety Tip: Share your location with trusted contacts when traveling alone."
-                android:textColor="#03DAC6" />
-        </LinearLayout>
+                android:layout_below="@id/iv_more_options"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:id="@+id/tv_welcome"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/titilliumweb_bold"
+                    android:gravity="center"
+                    android:text="Welcome to Sangini"
+                    android:textColor="@color/purple_200"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_safety_tip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/titilliumweb_regular"
+                    android:layout_marginTop="12dp"
+                    android:background="#2D2D2D"
+                    android:padding="16dp"
+                    android:text="Safety Tip: Share your location with trusted contacts when traveling alone."
+                    android:textColor="#03DAC6" />
+            </LinearLayout>
+        </RelativeLayout>
     </androidx.cardview.widget.CardView>
+
 
     <FrameLayout
         android:id="@+id/sos_container"
@@ -147,7 +171,7 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_emergency_contacts"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
+                android:layout_height="100dp"
                 android:layout_weight="1"
                 android:clipToPadding="false"
                 android:padding="8dp"

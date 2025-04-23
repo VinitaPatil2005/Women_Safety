@@ -13,11 +13,12 @@
         android:icon="@drawable/blog"
         android:title="Blogs" />
     <item
-        android:id="@+id/profileFragment"
-        android:icon="@drawable/profile"
-        android:title="Profile" />
-    <item
         android:id="@+id/nearbypoliceFragment"
-        android:icon="@drawable/policestation"
+        android:icon="@drawable/police"
         android:title="Nearby Police" />
+<!--    <item-->
+<!--        android:id="@+id/profileFragment"-->
+<!--        android:icon="@drawable/profile"-->
+<!--        android:title="Profile" />-->
+
 </menu>

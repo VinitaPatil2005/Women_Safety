@@ -18,11 +18,13 @@ import android.view.ViewGroup
 import android.view.Window
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.women_safety.R
@@ -99,6 +101,12 @@ class HomeFragment : Fragment() {
         addContactFab = view.findViewById(R.id.fab_add_contact)
         recyclerView = view.findViewById(R.id.rv_emergency_contacts)
         noContactsText = view.findViewById(R.id.tv_no_contacts)
+
+        val profileIcon = view.findViewById<ImageView>(R.id.iv_more_options)
+        profileIcon.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_profileFragment)
+        }
+
 
         // Set up RecyclerView
         setupRecyclerView()

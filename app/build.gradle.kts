@@ -37,6 +37,7 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
     }
 }
 
@@ -89,4 +90,8 @@ dependencies {
     implementation (libs.material.v190)
     implementation (libs.androidx.fragment.ktx.v161)
     implementation (libs.play.services.location)
+
+    //animation
+    implementation (libs.lottie)
+    implementation("com.airbnb.android:lottie:6.1.0")
 }
