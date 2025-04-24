@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.women_safety.R
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 
 class LoginFragment : Fragment() {
@@ -40,10 +41,28 @@ class LoginFragment : Fragment() {
         loginButton = view.findViewById(R.id.btn_login)
         registerPrompt = view.findViewById(R.id.tv_register_prompt)
 
+        emailEditText.setOnFocusChangeListener { _, hasFocus ->
+            if(hasFocus){
+                emailEditText.hint=""
+            }
+            if (!hasFocus){
+                emailEditText.hint="Email"
+
+            }
+        }
+
+
         // Easter egg: If you enter "safe123" as password, show a secret message
         passwordEditText.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus && passwordEditText.text.toString() == "safe123") {
                 Toast.makeText(context, "🌟 You found the secret code! Stay safe! 🌟", Toast.LENGTH_LONG).show()
+            }
+            if(hasFocus){
+                passwordEditText.hint=""
+            }
+            if (!hasFocus){
+                passwordEditText.hint="Password"
+
             }
         }
 
