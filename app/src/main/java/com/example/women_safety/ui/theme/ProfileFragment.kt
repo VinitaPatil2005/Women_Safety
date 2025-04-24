@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.women_safety.R
 import com.example.women_safety.models.User
 import com.google.firebase.FirebaseApp
@@ -95,6 +96,7 @@ class ProfileFragment : Fragment() {
 
         logoutButton.setOnClickListener {
             signOut()
+            findNavController().navigate(R.id.action_profile_to_loginFragment)
         }
 
         profileImageView.setOnClickListener {
@@ -233,6 +235,7 @@ class ProfileFragment : Fragment() {
 
     private fun signOut() {
         auth.signOut()
+//        findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
         showToast("Logged out successfully")
     }
 

@@ -75,6 +75,7 @@ class RegisterFragment : Fragment() {
                             .set(user)
                             .addOnSuccessListener {
                                 Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
+                                auth.signOut()
                                 findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
                             }
                             .addOnFailureListener { e ->
