@@ -1,10 +1,15 @@
 # Women_Safety
 
+![Android](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?logo=kotlin&logoColor=white)
+![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase&logoColor=black)
+![License](https://img.shields.io/badge/License-Educational%20Use-blue)
+
 A Kotlin-based Android application designed to improve women’s safety through quick emergency assistance, location sharing, contact alerts, voice-triggered actions, and safety guidance.
 
 ## Overview
 
-**Women_Safety** is a mobile safety application built to help users respond quickly in critical situations. The app combines emergency communication, location-based assistance, nearby police search, chatbot support, and safety blogs in a clean and accessible Android interface.
+**Women_Safety** is a mobile safety application built to help users respond quickly in critical situations. It combines emergency communication, location-based assistance, nearby police search, chatbot support, and safety-oriented navigation in a clean and accessible Android experience.
 
 ## Key Features
 
