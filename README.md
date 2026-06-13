@@ -64,7 +64,7 @@ A Kotlin-based Android application designed to improve women’s safety through 
 | --- | --- |
 | ![Login](docs/screenshots/login.jpg) | ![Home Screen](docs/screenshots/HomeScreen.jpg) |
 
-### Nearby Police / Chatbot
+### Nearby Police / Nearby Hospitals
 | Nearby Police | Nearby Hospitals |
 | --- | --- |
 | ![Nearby Police](docs/screenshots/Nearby-Police.jpg) | ![Nearby Hospitals](docs/screenshots/Nearby-Hospitals,jpg) |
