@@ -57,7 +57,7 @@ A Kotlin-based Android application designed to improve women’s safety through 
 ### Splash / Signup
 | Splash Screen | Signup Screen |
 | --- | --- |
-| ![Login](docs/screenshots/splash-screen.jpg) | ![Home Screen](docs/screenshots/sign.jpg) |
+| ![Login](docs/screenshots/splash-screen.jpg) | ![Home Screen](docs/screenshots/signup.jpg) |
 
 ### Home / SOS
 | Login Screen | Home Screen |
@@ -67,12 +67,12 @@ A Kotlin-based Android application designed to improve women’s safety through 
 ### Nearby Police / Chatbot
 | Nearby Police | Nearby Hospitals |
 | --- | --- |
-| ![Nearby Police](docs/screenshots/Nearby-Police.jpg) | ![Chatbot](docs/screenshots/Nearby-Hospitals) |
+| ![Nearby Police](docs/screenshots/Nearby-Police.jpg) | ![Nearby Hospitals](docs/screenshots/Nearby-Hospitals,jpg) |
 
 ### Blogs / Chatbot / SMS
 | Blogs | Chatbot | Sms |
 | --- | --- |
-| ![Blogs](docs/screenshots/Blogs.jpg) | ![SOS Screen](docs/screenshots/Chatbot.jpg) | ![SOS Screen](docs/screenshots/sms.jpg) |
+| ![Blogs](docs/screenshots/Blogs.jpg) | ![Chatbot](docs/screenshots/Chatbot.jpg) | ![SMS Screen](docs/screenshots/sms.jpg) |
 
 ## Project Structure
 
