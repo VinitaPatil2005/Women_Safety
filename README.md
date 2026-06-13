@@ -54,21 +54,25 @@ A Kotlin-based Android application designed to improve women’s safety through 
 ## Screenshots
 
 > Add your screenshots in `docs/screenshots/` and update the file names below.
+### Splash / Signup
+| Splash Screen | Signup Screen |
+| --- | --- |
+| ![Login](docs/screenshots/splash-screen.jpg) | ![Home Screen](docs/screenshots/sign.jpg) |
 
 ### Home / SOS
-| Home Screen | SOS Alert |
+| Login Screen | Home Screen |
 | --- | --- |
-| ![Home Screen](docs/screenshots/home.png) | ![SOS Screen](docs/screenshots/sos.png) |
+| ![Login](docs/screenshots/login.jpg) | ![Home Screen](docs/screenshots/HomeScreen.jpg) |
 
 ### Nearby Police / Chatbot
-| Nearby Police | Chatbot |
+| Nearby Police | Nearby Hospitals |
 | --- | --- |
-| ![Nearby Police](docs/screenshots/nearby-police.png) | ![Chatbot](docs/screenshots/chatbot.png) |
+| ![Nearby Police](docs/screenshots/Nearby-Police.jpg) | ![Chatbot](docs/screenshots/Nearby-Hospitals) |
 
-### Blogs / Login
-| Blogs | Login |
+### Blogs / Chatbot / SMS
+| Blogs | Chatbot | Sms |
 | --- | --- |
-| ![Blogs](docs/screenshots/blogs.png) | ![Login](docs/screenshots/login.png) |
+| ![Blogs](docs/screenshots/Blogs.jpg) | ![SOS Screen](docs/screenshots/Chatbot.jpg) | ![SOS Screen](docs/screenshots/sms.jpg) |
 
 ## Project Structure
 
