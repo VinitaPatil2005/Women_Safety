@@ -53,7 +53,6 @@ A Kotlin-based Android application designed to improve women’s safety through 
 
 ## Screenshots
 
-> Add your screenshots in `docs/screenshots/` and update the file names below.
 ### Splash / Signup
 | Splash Screen | Signup Screen |
 | --- | --- |
